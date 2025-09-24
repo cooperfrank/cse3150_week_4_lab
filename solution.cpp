@@ -24,6 +24,14 @@ void write_board_csv(const vector<vector<int>>& board, bool first) {
 
 void print_board(const vector<vector<int>>& board, bool first) {
     // TODO: implement print_board here
+    for (auto& row : board) {
+        for (auto& cell : row) {
+            cout << cell << " ";
+        }
+
+        cout << endl;
+    }
+
     write_board_csv(board, first);
 }
 
@@ -39,7 +47,7 @@ void spawn_tile(vector<vector<int>>& board) {
 
 // TODO: Compress a row, remove zeroes, and then pad with zeroes at the end
 std::vector<int> compress_row(const std::vector<int>& row) {return row;}
-// TODO: Merge a row (assumes the row is already compressed)
+    // TODO: Merge a row (assumes the row is already compressed)
 std::vector<int> merge_row(std::vector<int> row) {return row;}
 // TODO: use copy_if and iterators
 bool move_left(vector<vector<int>>& board){return false;}
