@@ -28,35 +28,174 @@ void print_board(const vector<vector<int>>& board, bool first) {
         for (auto& cell : row) {
             cout << cell << " ";
         }
-
         cout << endl;
     }
 
     write_board_csv(board, first);
 }
 
-// TODO: use algorithms to spawn properly
 void spawn_tile(vector<vector<int>>& board) {
-    for (int r=0;r<4;r++)
-        for (int c=0;c<4;c++)
-            if (board[r][c]==0) { board[r][c]=2; return; }
-    // TODO: Feed this into chat GPT and have it correct the function for you
-    // with proper prompting
+    vector<pair<int,int>> empty_cells;
+
+    // Collect all empty positions
+    for (int r = 0; r < 4; ++r) {
+        for (int c = 0; c < 4; ++c) {
+            if (board[r][c] == 0) {
+                empty_cells.push_back({r, c});
+            }
+        }
+    }
+
+    // If there are no empty cells, do nothing
+    if (empty_cells.empty()) return;
+
+    // Seed random generator (do this once in main() ideally)
+    // srand(time(nullptr)); // <-- call this once at program start
+
+    // Pick a random empty cell
+    int idx = rand() % empty_cells.size();
+    int r = empty_cells[idx].first;
+    int c = empty_cells[idx].second;
+
+    // Spawn 2 (90%) or 4 (10%)
+    board[r][c] = (rand() % 10 == 0) ? 4 : 2;
+}
+
+// TODO: Compress a row, remove zeroes, and then pad with zeroes at the end
+std::vector<int> compress_row(const std::vector<int>& row) {
+    std::vector<int> compressed;
+
+    std::copy_if(
+        row.begin(),
+        row.end(),
+        std::back_inserter(compressed),
+        [](int value) { return value != 0; }
+    );
+
+    compressed.resize(4, 0);
+
+    return compressed;
+}
+
+// TODO: Merge a row (assumes the row is already compressed)
+std::vector<int> merge_row(std::vector<int> row) {
+    for (int i = 0; i < 3; i++) {
+        if (row[i] == row[i+1]) {
+            row[i] *= 2;
+            row[i+1] = 0;
+        }
+    }
+
+    row = compress_row(row);
+
+    return row;
 }
 
 
-// TODO: Compress a row, remove zeroes, and then pad with zeroes at the end
-std::vector<int> compress_row(const std::vector<int>& row) {return row;}
-    // TODO: Merge a row (assumes the row is already compressed)
-std::vector<int> merge_row(std::vector<int> row) {return row;}
+
 // TODO: use copy_if and iterators
-bool move_left(vector<vector<int>>& board){return false;}
+bool move_left(vector<vector<int>>& board) {
+    bool changed = false;
+
+    for (auto& row : board) {
+        auto original = row;
+
+        row = compress_row(row);
+        row = merge_row(row);
+
+        if (row != original) {
+            changed = true;
+        }
+    }
+
+    return changed;
+}
+
+
 // TODO: use reverse iterators
-bool move_right(vector<vector<int>>& board){return false;}
+bool move_right(vector<vector<int>>& board) {
+    bool changed = false;
+
+    for (auto& row : board) {
+        auto original = row;
+
+        std::reverse(row.begin(), row.end());
+
+        row = compress_row(row);
+        row = merge_row(row);
+
+        std::reverse(row.begin(), row.end());
+
+        if (row != original) {
+            changed = true;
+        }
+    }
+
+    return changed;
+}
+
 // TODO: use column traversal
-bool move_up(vector<vector<int>>& board){return false;}
+bool move_up(vector<vector<int>>& board) {
+    bool changed = false;
+
+    for (int i = 0; i < 4; i++) {
+        std::vector<int> col(4);
+
+        for (int j = 0; j < 4; j++) {
+            col[j] = board[j][i];
+        }
+
+        auto original = col;
+
+        col = compress_row(col);
+        col = merge_row(col);
+
+        for (int j = 0; j < 4; j++) {
+            board[j][i] = col[j];
+        }
+
+        if (col != original) {
+            changed = true;
+        }
+    }
+
+
+    return changed;
+}
+
+
 // TODO: use column traversal with reverse
-bool move_down(vector<vector<int>>& board){return false;}
+bool move_down(vector<vector<int>>& board) {
+    bool changed = false;
+
+    for (int i = 0; i < 4; i++) {
+        std::vector<int> col(4);
+
+        for (int j = 0; j < 4; j++) {
+            col[j] = board[j][i];
+        }
+
+        auto original = col;
+
+        std::reverse(col.begin(), col.end());
+
+        col = compress_row(col);
+        col = merge_row(col);
+
+        std::reverse(col.begin(), col.end());
+
+        for (int j = 0; j < 4; j++) {
+            board[j][i] = col[j];
+        }
+
+        if (col != original) {
+            changed = true;
+        }
+    }
+
+
+    return changed;
+}
 
 int main(){
     srand(time(nullptr));
@@ -77,6 +216,11 @@ int main(){
 
         if (cmd=='u') {
             // TODO: get the history and print the board and continue
+            if (!history.empty()) {
+                board = history.top();
+                history.pop();
+                print_board(board, false);
+            }
         }
 
         vector<vector<int>> prev = board;
@@ -88,6 +232,7 @@ int main(){
 
         if (moved) {
             // TODO: Store the previous state here!
+            history.push(prev);
             spawn_tile(board);
         }
     }
